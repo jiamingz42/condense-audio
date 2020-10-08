@@ -5,31 +5,34 @@ from subprocess import *
 from typing import NamedTuple
 from trim_movie.timestamp import Timestamp
 
-import shlex
-import webvtt
+
+import argparse
+import math
 import os
 import re
-import math
+import shlex
+import webvtt
 
 
 def run_command(cmd):
     with Popen(shlex.split(cmd), stdout=PIPE) as proc:
-        print(proc.stdout.read())
+        stdout = proc.stdout.read()
+        if stdout:
+            print(stdout)
 
 
 def cut_out_video(infile, outfile, start_time, duration):
-    cmd = f"ffmpeg -i \"{infile}\" -ss {start_time} -t {duration} -c:a copy -map 0:1 -y \"{outfile}\""
-    print(cmd)
+    cmd = f"ffmpeg -loglevel error -i '{infile}' -ss {start_time} -t {duration} -c:a copy -map 0:1 -y '{outfile}'"
     run_command(cmd)
 
 
 def concat_video(infile, outfile):
-    cmd = f"ffmpeg -safe 0 -f concat -segment_time_metadata 1 -i {infile} -vf select=concatdec_select -af aselect=concatdec_select,aresample=async=1 -y {outfile}"
+    cmd = f"ffmpeg -loglevel error -safe 0 -f concat -segment_time_metadata 1 -i {infile} -vf select=concatdec_select -af aselect=concatdec_select,aresample=async=1 -y '{outfile}'"
     run_command(cmd)
 
 
 def get_duration(infile):
-    cmd = f"ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 {infile}"
+    cmd = f"ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 '{infile}'"
     with Popen(shlex.split(cmd), stdout=PIPE, stderr=STDOUT) as proc:
         stdout = proc.stdout.read().decode("utf-8").strip()
         if not stdout:
@@ -42,14 +45,14 @@ class Caption(NamedTuple):
     end: Timestamp
     text: str
 
-# round to 0.5 percision, 00:12.22 vs 00:12:22.3
+
+class Outfile(NamedTuple):
+    path: str
+    duration: Timestamp
 
 
 def read_webvtt(infile):
     for i, caption in enumerate(webvtt.read(infile)):
-        if i == 47:
-            print(caption)
-            import ipdb; ipdb.set_trace()
         yield Caption(
             Timestamp.from_s(caption.start),
             Timestamp.from_s(caption.end),
@@ -57,84 +60,139 @@ def read_webvtt(infile):
         )
 
 
-def main():
-    # Step 1: Read, filter and map subtitle
-    d = []
-    captions = []
-    for caption in read_webvtt('sample.vtt'):
-        if '♪' in caption.text:
-            continue
-        captions.append(caption)
-        if (caption.end - caption.start).total_milliseconds < 0:
-            import ipdb; ipdb.set_trace()
-        d.append((caption.end - caption.start).total_milliseconds)
-
+def group_captions(captions, interval):
     groups = [[]]
     for i, caption in enumerate(captions):
-        if i > 0 and (caption.start - captions[i-1].end).total_milliseconds > 2000:
+        if i > 0 and (caption.start - captions[i - 1].end).total_milliseconds > interval:
             groups.append([])
         groups[-1].append(caption)
-
-    print(len(groups))
-    print(sorted(d)[:5])
-
-    return
+    return groups
 
 
+def create_adjusted_subtile(groups):
     vtt = webvtt.WebVTT()
+    for i, group in enumerate(groups):
+        if i == 0:
+            shift = group[0].start
+        else:
+            last_timestamp = Timestamp.from_s(vtt.captions[-1].end)
+            shift = (group[0].start - last_timestamp).map(lambda x: x - 1)
+            pass
 
-    TMP_DIR = "tmp"
-    list_file_path = os.path.join(TMP_DIR, "list.txt")
-    # caption.start, caption.end, caption.text
-    total = Timestamp(0)
-    t = 0
-    with open(list_file_path, "w") as list_txt:
-        for i, caption in enumerate(read_webvtt('sample.vtt')):
-            expect_duration = caption.end - caption.start
-            print(i, caption)
-
-            outfile = "%s/out_%03d.aac" % (TMP_DIR, i)
-            cut_out_video(
-                "/Users/jiamingz/dev/trim_movie/sample.mp4",
-                outfile,
-                str(caption.start),
-                str(expect_duration),
-            )
-            # duration = get_duration(outfile)
-            duration = 0
-            t += duration
-
-            list_txt.write(f"file '{os.path.abspath(outfile)}'\n")
-            # list_txt.write(f"file '/Users/jiamingz/dev/trim_movie/sample.mp4'\n")
-            # list_txt.write(f"inpoint {caption['start'].total_milliseconds / 1000}\n")
-            # list_txt.write(f"outpoint {caption['end'].total_milliseconds / 1000}\n")
-
-            # out_duration = get_duration(outfile)
-            total = total + expect_duration
-            # total = total + out_duration
-            # print(expect_duration, out_duration)
-
-            if vtt.captions:
-                shift = (
-                    caption.start - Timestamp.from_s(vtt.captions[-1].end)).map(lambda x: x - 1)
-            else:
-                shift = caption.start
-
+        for caption in group:
             caption = webvtt.Caption(
                 str(caption.start - shift),
                 str(caption.end - shift),
                 caption.text
             )
             vtt.captions.append(caption)
+    return vtt
 
-    concat_video(list_file_path, os.path.join(TMP_DIR, "combine.mp4"))
-    print(f"expect {total} {t}")
 
-    actual = get_duration(os.path.join(TMP_DIR, "combine.mp4"))
-    print(f"actual: {actual}")
+def main():
+    parser = argparse.ArgumentParser(description='Process some integers.')
+    parser.add_argument('--vin', required=True,
+                        dest='video_in', help='Video infile')
+    parser.add_argument('--out', required=True, help='Outfile')
+    parser.add_argument('--sin', required=True,
+                        dest='sub_in', help='Subtitle infile')
+    parser.add_argument('--sout', required=True,
+                        dest='sub_out', help='Subtitle infile')
+    parser.add_argument('--tmpdir', default="tmp")
+    parser.add_argument('--keep-tmpdir', default=False, action='store_true')
 
-    vtt.save('my_captions.vtt')
+    args = parser.parse_args()
 
+    tmpdir = args.tmpdir
+    keep_tmpdir = args.keep_tmpdir
+    subtitle_infile = os.path.abspath(args.sub_in)
+    subtitle_outfile = os.path.abspath(args.sub_out)
+    video_infile = os.path.abspath(args.video_in)
+    final_outfile = os.path.abspath(args.out)
+    final_outfile_dir = os.path.dirname(final_outfile)
+    list_file_path = os.path.join(tmpdir, "list.txt")
+
+    assert os.path.isfile(video_infile), "File %s not found" % subtitle_infile
+    assert os.path.isfile(
+        subtitle_infile), "File %s not found" % subtitle_infile
+    assert os.path.isdir(tmpdir), "Folder %s not found" % tmpdir
+
+    # Make sure the dir for outfile exists
+    if not os.path.exists(final_outfile_dir):
+        os.makedirs(final_outfile_dir)
+
+    outfiles = []  # will be mutated
+    try:
+        create_condense_audio(tmpdir, subtitle_infile, subtitle_outfile,
+                              video_infile, final_outfile, list_file_path, outfiles)
+    finally:
+        # Clean up
+        try:
+            os.remove(list_file_path)
+        except FileNotFoundError:
+            pass
+        if not keep_tmpdir:
+            for outfile in outfiles:
+                os.remove(outfile.path)
+
+
+def create_condense_audio(tmpdir, subtitle_infile, subtitle_outfile, video_infile, final_outfile, list_file_path, outfiles):
+    # Step 1: Read, filter and map subtitle
+    def is_valid_subtitle(caption: webvtt.Caption):
+        if '♪' in caption.text:
+            return False
+        if (caption.end - caption.start).total_milliseconds < 0:
+            raise StandardError("Invalid capton")
+        return True
+
+    def map_subtile(caption: webvtt.Caption):
+        new_text = re.sub("\(.+\)", "", caption.text)
+        if new_text == caption.text:
+            return caption
+        return Caption(caption.start, caption.end, new_text)
+
+    captions = [
+        *map(map_subtile, filter(is_valid_subtitle, read_webvtt(subtitle_infile)))]
+
+    groups = group_captions(captions, 1000)
+
+    for i, group in enumerate(groups):
+        start, end = group[0].start, group[-1].end
+        duration = end - start
+        outfile = os.path.abspath("%s/out_%03d.aac" % (tmpdir, i))
+        cut_out_video(
+            video_infile,
+            outfile,
+            str(start),
+            str(duration),
+        )
+        outfiles.append(Outfile(outfile, duration))
+
+    with open(list_file_path, "w") as list_txt:
+        for outfile in outfiles:
+            list_txt.write(f"file '{outfile.path}'\n")
+            list_txt.write(f"duration {outfile.duration.total_seconds}\n")
+
+    concat_video(list_file_path, final_outfile)
+
+    group_durations = [
+        *map(lambda group: group[-1].end - group[0].start, groups)]
+    group_durations_acc = []
+    for i, group_duration in enumerate(group_durations):
+        if i == 0:
+            group_durations_acc.append(group_duration)
+        else:
+            group_durations_acc.append(
+                group_durations_acc[-1] + group_duration)
+    assert len(group_durations_acc) == len(group_durations)
+
+    vtt = create_adjusted_subtile(groups)
+    vtt.save(subtitle_outfile)
+
+    video_in_duration = get_duration(video_infile)
+    outfile_duration = get_duration(final_outfile)
+    print(f"Output duration is %.2f%% of the original" %
+          (outfile_duration / video_in_duration * 100))
 
 
 main()
