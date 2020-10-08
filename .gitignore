@@ -1,10 +1,15 @@
 *.mkv
 *.mp4
+*.mp3
 *.vtt
 *.srt
+*.icloud
+
+**/*.pyc
 **/.DS_Store
+
 __pycache__/
+
 tmp
 .cache/
 out.gif
-**/*.icloud
