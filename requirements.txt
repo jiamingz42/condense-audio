@@ -1,0 +1,3 @@
+pyfunctional
+webvtt-py
+tqdm
