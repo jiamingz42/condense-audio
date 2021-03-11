@@ -1,5 +1,3 @@
-
-
 class Timestamp(object):
     def __init__(self, total_milliseconds):
         self.total_milliseconds = total_milliseconds
@@ -12,6 +10,10 @@ class Timestamp(object):
 
     def ceil(self):
         return self.map(math.ceil)
+
+    @property
+    def total_seconds(self):
+        return self.total_milliseconds / 1000
 
     @staticmethod
     def from_s(string):
