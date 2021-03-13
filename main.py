@@ -3,6 +3,7 @@
 
 from subprocess import *
 from typing import NamedTuple
+from tqdm import tqdm
 from trim_movie.timestamp import Timestamp
 
 
@@ -22,13 +23,25 @@ def run_command(cmd):
 
 
 def cut_out_video(infile, outfile, start_time, duration):
-    cmd = f"ffmpeg -loglevel error -i '{infile}' -ss {start_time} -t {duration} -c:a copy -map 0:1 -y '{outfile}'"
+    cmd = f"ffmpeg -hide_banner -loglevel error -i '{infile}' -ss {start_time} -t {duration} -c:a copy -map 0:1 -y '{outfile}'"
     run_command(cmd)
 
 
 def concat_video(infile, outfile):
-    cmd = f"ffmpeg -loglevel error -safe 0 -f concat -segment_time_metadata 1 -i {infile} -vf select=concatdec_select -af aselect=concatdec_select,aresample=async=1 -y '{outfile}'"
-    run_command(cmd)
+    cmd = f"ffmpeg -hide_banner -loglevel error -safe 0 -f concat -segment_time_metadata 1 -i {infile} -vf select=concatdec_select -af aselect=concatdec_select,aresample=async=1 -y '{outfile}'"
+    with Popen(shlex.split(cmd), stdout=PIPE, stderr=STDOUT) as proc:
+        for i, line in enumerate(readlines(proc.stdout)):
+            #print(i, line[:-1])
+            continue
+
+
+def readlines(stream):
+    while True:
+        line = stream.readline().decode('utf-8')
+        if line:
+            yield line
+        else:
+            break
 
 
 def get_duration(infile):
@@ -135,6 +148,8 @@ def main():
             for outfile in outfiles:
                 os.remove(outfile.path)
 
+    return 0
+
 
 def create_condense_audio(tmpdir, subtitle_infile, subtitle_outfile, video_infile, final_outfile, list_file_path, outfiles):
     # Step 1: Read, filter and map subtitle
@@ -156,7 +171,8 @@ def create_condense_audio(tmpdir, subtitle_infile, subtitle_outfile, video_infil
 
     groups = group_captions(captions, 1000)
 
-    for i, group in enumerate(groups):
+    print("Creating audio segments based on the subtitle ...")
+    for i, group in enumerate(tqdm(groups)):
         start, end = group[0].start, group[-1].end
         duration = end - start
         outfile = os.path.abspath("%s/out_%03d.aac" % (tmpdir, i))
@@ -173,6 +189,7 @@ def create_condense_audio(tmpdir, subtitle_infile, subtitle_outfile, video_infil
             list_txt.write(f"file '{outfile.path}'\n")
             list_txt.write(f"duration {outfile.duration.total_seconds}\n")
 
+    print("Concating audio segments ...")
     concat_video(list_file_path, final_outfile)
 
     group_durations = [
@@ -195,4 +212,6 @@ def create_condense_audio(tmpdir, subtitle_infile, subtitle_outfile, video_infil
           (outfile_duration / video_in_duration * 100))
 
 
-main()
+
+if __name__ == '__main__':
+  main()
