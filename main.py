@@ -112,26 +112,24 @@ def main() -> int:
     return 0
 
 
+# TODO: Provide these function via extension
+def is_valid_subtitle(caption: webvtt.Caption) -> bool:
+    if '♪' in caption.text:
+        return False
+    if (caption.end - caption.start).total_milliseconds < 0:
+        raise ValueError("Invalid capton")
+    return True
+
+
+def map_subtile(caption: webvtt.Caption) -> webvtt.Caption:
+    new_text = re.sub("\(.+\)", "", caption.text)
+    if new_text == caption.text:
+        return caption
+    return Caption(caption.start, caption.end, new_text)
+
+
 def create_condense_audio(tmpdir: str, subtitle_infile: str, subtitle_outfile: str, video_infile: str, final_outfile: str, list_file_path: str, outfiles: List[Outfile]):
-    # Step 1: Read, filter and map subtitle
-    def is_valid_subtitle(caption: webvtt.Caption):
-        if '♪' in caption.text:
-            return False
-        if (caption.end - caption.start).total_milliseconds < 0:
-            raise ValueError("Invalid capton")
-        return True
-
-    def map_subtile(caption: webvtt.Caption):
-        new_text = re.sub("\(.+\)", "", caption.text)
-        if new_text == caption.text:
-            return caption
-        return Caption(caption.start, caption.end, new_text)
-
-
     captions = load_captions(subtitle_infile, is_valid_subtitle, map_subtile)
-    # captions = [
-    #     *map(map_subtile, filter(is_valid_subtitle, read_webvtt(subtitle_infile)))]
-
     groups = group_captions(captions, 1000)
 
     print("Creating audio segments based on the subtitle ...")
