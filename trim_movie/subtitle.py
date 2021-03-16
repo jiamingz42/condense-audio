@@ -8,7 +8,7 @@ class Caption(NamedTuple):
     end: Timestamp
     text: str
 
-def load_captions(subtitle_infile: str, is_valid_subtitle, map_subtile) -> List[str]:
+def load_captions(subtitle_infile: str, is_valid_subtitle, map_subtile) -> List[Caption]:
     return [*map(map_subtile, filter(is_valid_subtitle, read_webvtt(subtitle_infile)))]
 
 def read_webvtt(infile: str):
@@ -20,8 +20,8 @@ def read_webvtt(infile: str):
         )
 
 
-def group_captions(captions, interval):
-    groups = [[]]
+def group_captions(captions : List[Caption], interval: int) -> List[List[Caption]]:
+    groups : List[List[Caption]] = [[]]
     for i, caption in enumerate(captions):
         if i > 0 and (caption.start - captions[i - 1].end).total_milliseconds > interval:
             groups.append([])
@@ -29,7 +29,7 @@ def group_captions(captions, interval):
     return groups
 
 
-def create_adjusted_subtile(groups):
+def create_adjusted_subtile(groups: List[List[Caption]]) -> webvtt.WebVTT:
     vtt = webvtt.WebVTT()
     for i, group in enumerate(groups):
         if i == 0:
