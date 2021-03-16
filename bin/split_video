@@ -12,7 +12,7 @@
 MAX_DURATION=600 # seconds
 
 VIDEO_FILE="$1"
-if [[ -e $VIDEO_FILE ]]; then
+if [[ ! -e $VIDEO_FILE ]]; then
   echo "File not exists: $VIDEO_FILE"
   exit 1
 fi
@@ -20,7 +20,7 @@ fi
 pattern="$(echo $VIDEO_FILE | sed -E "s/.*(S[0-9]+E[0-9]+).*/\1/")"
 
 SUBTITLE_FILE="$(ls *$pattern*vtt)"
-if [[ -e $SUBTITLE_FILE ]]; then
+if [[ ! -e $SUBTITLE_FILE ]]; then
   echo "File not exists: $SUBTITLE_FILE"
   exit 1
 fi
