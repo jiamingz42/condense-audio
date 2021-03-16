@@ -22,7 +22,7 @@ def load_captions(subtitle_infile: str,
 
 
 def read_webvtt(infile: str):
-    for i, caption in enumerate(webvtt.read(infile)):
+    for caption in webvtt.read(infile):
         yield Caption(
             Timestamp.from_s(caption.start),
             Timestamp.from_s(caption.end),
