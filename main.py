@@ -2,9 +2,10 @@
 # -*- coding: utf-8 -*-
 
 from subprocess import *
-from typing import NamedTuple
+from typing import NamedTuple, List
 from tqdm import tqdm
 from trim_movie.timestamp import Timestamp
+from trim_movie.ffmpeg import concat_video, get_duration, cut_out_video
 from glob import glob
 
 
@@ -14,44 +15,6 @@ import os
 import re
 import shlex
 import webvtt
-
-
-def run_command(cmd):
-    with Popen(shlex.split(cmd), stdout=PIPE) as proc:
-        stdout = proc.stdout.read()
-        if stdout:
-            print(stdout)
-
-
-def cut_out_video(infile, outfile, start_time, duration):
-    cmd = f"ffmpeg -hide_banner -loglevel error -i '{infile}' -ss {start_time} -t {duration} -c:a copy -map 0:1 -y '{outfile}'"
-    run_command(cmd)
-
-
-def concat_video(infile, outfile):
-    cmd = f"ffmpeg -hide_banner -loglevel error -safe 0 -f concat -segment_time_metadata 1 -i {infile} -vf select=concatdec_select -af aselect=concatdec_select,aresample=async=1 -y '{outfile}'"
-    with Popen(shlex.split(cmd), stdout=PIPE, stderr=STDOUT) as proc:
-        for i, line in enumerate(readlines(proc.stdout)):
-            #print(i, line[:-1])
-            continue
-
-
-def readlines(stream):
-    while True:
-        line = stream.readline().decode('utf-8')
-        if line:
-            yield line
-        else:
-            break
-
-
-def get_duration(infile):
-    cmd = f"ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 '{infile}'"
-    with Popen(shlex.split(cmd), stdout=PIPE, stderr=STDOUT) as proc:
-        stdout = proc.stdout.read().decode("utf-8").strip()
-        if not stdout:
-            raise StandardError()
-        return float(stdout)
 
 
 class Caption(NamedTuple):
@@ -143,7 +106,8 @@ def main():
         match = re.match(".*(S\d+E\d+)", video_infile)
         assert match is not None, "Did not specify `--sin`. Can't infer from `--sout` either."
         subtitle_filename = '{idx}.vtt'.format(idx=match.group(1))
-        subtitle_outfile = os.path.join(os.path.dirname(video_infile), 'condensed', subtitle_filename)
+        subtitle_outfile = os.path.join(os.path.dirname(
+            video_infile), 'condensed', subtitle_filename)
 
     if args.sub_out:
         final_outfile = os.path.abspath(args.out)
@@ -151,7 +115,8 @@ def main():
         match = re.match(".*(S\d+E\d+)", video_infile)
         assert match is not None, "Did not specify `--sin`. Can't infer from `--sout` either."
         final_outfile_name = '{idx}.mp3'.format(idx=match.group(1))
-        final_outfile = os.path.join(os.path.dirname(video_infile), 'condensed', final_outfile_name)
+        final_outfile = os.path.join(os.path.dirname(
+            video_infile), 'condensed', final_outfile_name)
 
     final_outfile_dir = os.path.dirname(final_outfile)
     list_file_path = os.path.join(tmpdir, "list.txt")
@@ -190,13 +155,13 @@ def main():
     return 0
 
 
-def create_condense_audio(tmpdir, subtitle_infile, subtitle_outfile, video_infile, final_outfile, list_file_path, outfiles):
+def create_condense_audio(tmpdir: str, subtitle_infile: str, subtitle_outfile: str, video_infile: str, final_outfile : str, list_file_path : str, outfiles: List[Outfile]):
     # Step 1: Read, filter and map subtitle
     def is_valid_subtitle(caption: webvtt.Caption):
         if '♪' in caption.text:
             return False
         if (caption.end - caption.start).total_milliseconds < 0:
-            raise StandardError("Invalid capton")
+            raise ValueError("Invalid capton")
         return True
 
     def map_subtile(caption: webvtt.Caption):
@@ -224,9 +189,9 @@ def create_condense_audio(tmpdir, subtitle_infile, subtitle_outfile, video_infil
         outfiles.append(Outfile(outfile, duration))
 
     with open(list_file_path, "w") as list_txt:
-        for outfile in outfiles:
-            list_txt.write(f"file '{outfile.path}'\n")
-            list_txt.write(f"duration {outfile.duration.total_seconds}\n")
+        for f in outfiles:
+            list_txt.write(f"file '{f.path}'\n")
+            list_txt.write(f"duration {f.duration.total_seconds}\n")
 
     print("Concating audio segments ...")
     concat_video(list_file_path, final_outfile)
