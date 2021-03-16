@@ -1,3 +1,4 @@
 pyfunctional
 webvtt-py
 tqdm
+ass
