@@ -1,20 +1,25 @@
 from trim_movie.timestamp import Timestamp
-from typing import NamedTuple, List
+from typing import NamedTuple, List, Callable
 
 import webvtt
+
 
 class Caption(NamedTuple):
     start: Timestamp
     end: Timestamp
     text: str
 
-def load_captions(subtitle_infile: str, is_valid_subtitle, map_subtile) -> List[Caption]:
+
+def load_captions(subtitle_infile: str,
+                  is_valid_subtitle: Callable[[webvtt.Caption], bool],
+                  map_subtile: Callable[[webvtt.Caption], webvtt.Caption]) -> List[Caption]:
     if subtitle_infile.endswith(".vtt"):
         return [*map(map_subtile, filter(is_valid_subtitle, read_webvtt(subtitle_infile)))]
     elif subtitle_infile.endswith(".ass"):
         raise NotImplemented
     else:
         raise ValueError("Unsupported subtitle type: %s" % subtitle_infile)
+
 
 def read_webvtt(infile: str):
     for i, caption in enumerate(webvtt.read(infile)):
@@ -25,8 +30,8 @@ def read_webvtt(infile: str):
         )
 
 
-def group_captions(captions : List[Caption], interval: int) -> List[List[Caption]]:
-    groups : List[List[Caption]] = [[]]
+def group_captions(captions: List[Caption], interval: int) -> List[List[Caption]]:
+    groups: List[List[Caption]] = [[]]
     for i, caption in enumerate(captions):
         if i > 0 and (caption.start - captions[i - 1].end).total_milliseconds > interval:
             groups.append([])
