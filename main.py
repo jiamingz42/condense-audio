@@ -23,7 +23,7 @@ class Outfile(NamedTuple):
     duration: Timestamp
 
 
-def main():
+def main() -> int:
     parser = argparse.ArgumentParser(description='Process some integers.')
     parser.add_argument('--vin', required=True,
                         dest='video_in', help='Video infile')
@@ -95,7 +95,7 @@ def main():
           '  Audio = "%s"\n' % final_outfile +
           '  Sub = "%s"\n' % subtitle_outfile)
 
-    outfiles = []  # will be mutated
+    outfiles : List[Outfile] = []  # will be mutated
     try:
         create_condense_audio(tmpdir, subtitle_infile, subtitle_outfile,
                               video_infile, final_outfile, list_file_path, outfiles)

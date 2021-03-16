@@ -1,6 +1,8 @@
 from trim_movie.timestamp import Timestamp
 from typing import NamedTuple, List
 
+import webvtt
+
 class Caption(NamedTuple):
     start: Timestamp
     end: Timestamp
