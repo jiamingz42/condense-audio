@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 class Timestamp(object):
     def __init__(self, total_milliseconds):
         self.total_milliseconds = total_milliseconds
@@ -25,6 +27,10 @@ class Timestamp(object):
         seconds = int(string[6:8])
         milliseconds = int(string[9:])
         return Timestamp((hours * 3600 + minutes * 60 + seconds) * 1000 + milliseconds)
+
+    @staticmethod
+    def from_timedelta(delta : timedelta):
+        return Timestamp(delta.total_seconds() * 1000)
 
     def __add__(self, other):
         assert isinstance(other, type(self))
