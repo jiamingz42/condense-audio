@@ -9,7 +9,12 @@ class Caption(NamedTuple):
     text: str
 
 def load_captions(subtitle_infile: str, is_valid_subtitle, map_subtile) -> List[Caption]:
-    return [*map(map_subtile, filter(is_valid_subtitle, read_webvtt(subtitle_infile)))]
+    if subtitle_infile.endswith(".vtt"):
+        return [*map(map_subtile, filter(is_valid_subtitle, read_webvtt(subtitle_infile)))]
+    elif subtitle_infile.endswith(".ass"):
+        raise NotImplemented
+    else:
+        raise ValueError("Unsupported subtitle type: %s" % subtitle_infile)
 
 def read_webvtt(infile: str):
     for i, caption in enumerate(webvtt.read(infile)):
