@@ -6,6 +6,7 @@ from typing import NamedTuple, List
 from tqdm import tqdm
 from trim_movie.timestamp import Timestamp
 from trim_movie.ffmpeg import concat_video, get_duration, cut_out_video
+from trim_movie.subtitle import Caption, read_webvtt, group_captions, create_adjusted_subtile, load_captions
 from glob import glob
 
 
@@ -17,53 +18,9 @@ import shlex
 import webvtt
 
 
-class Caption(NamedTuple):
-    start: Timestamp
-    end: Timestamp
-    text: str
-
-
 class Outfile(NamedTuple):
     path: str
     duration: Timestamp
-
-
-def read_webvtt(infile):
-    for i, caption in enumerate(webvtt.read(infile)):
-        yield Caption(
-            Timestamp.from_s(caption.start),
-            Timestamp.from_s(caption.end),
-            caption.text
-        )
-
-
-def group_captions(captions, interval):
-    groups = [[]]
-    for i, caption in enumerate(captions):
-        if i > 0 and (caption.start - captions[i - 1].end).total_milliseconds > interval:
-            groups.append([])
-        groups[-1].append(caption)
-    return groups
-
-
-def create_adjusted_subtile(groups):
-    vtt = webvtt.WebVTT()
-    for i, group in enumerate(groups):
-        if i == 0:
-            shift = group[0].start
-        else:
-            last_timestamp = Timestamp.from_s(vtt.captions[-1].end)
-            shift = (group[0].start - last_timestamp).map(lambda x: x - 1)
-            pass
-
-        for caption in group:
-            caption = webvtt.Caption(
-                str(caption.start - shift),
-                str(caption.end - shift),
-                caption.text
-            )
-            vtt.captions.append(caption)
-    return vtt
 
 
 def main():
@@ -155,7 +112,7 @@ def main():
     return 0
 
 
-def create_condense_audio(tmpdir: str, subtitle_infile: str, subtitle_outfile: str, video_infile: str, final_outfile : str, list_file_path : str, outfiles: List[Outfile]):
+def create_condense_audio(tmpdir: str, subtitle_infile: str, subtitle_outfile: str, video_infile: str, final_outfile: str, list_file_path: str, outfiles: List[Outfile]):
     # Step 1: Read, filter and map subtitle
     def is_valid_subtitle(caption: webvtt.Caption):
         if '♪' in caption.text:
@@ -170,8 +127,10 @@ def create_condense_audio(tmpdir: str, subtitle_infile: str, subtitle_outfile: s
             return caption
         return Caption(caption.start, caption.end, new_text)
 
-    captions = [
-        *map(map_subtile, filter(is_valid_subtitle, read_webvtt(subtitle_infile)))]
+
+    captions = load_captions(subtitle_infile, is_valid_subtitle, map_subtile)
+    # captions = [
+    #     *map(map_subtile, filter(is_valid_subtitle, read_webvtt(subtitle_infile)))]
 
     groups = group_captions(captions, 1000)
 
