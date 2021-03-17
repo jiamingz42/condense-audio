@@ -1,5 +1,6 @@
 from typing import List
 
+
 class WebVTT(object):
     @property
     def captions(self) -> List[Caption]:
@@ -8,7 +9,11 @@ class WebVTT(object):
     def save(self, path: str) -> None:
         pass
 
+
 class Caption(object):
+    def __init__(self, start: str, end: str, text: str):
+        pass
+
     @property
     def start(self) -> str:
         pass
@@ -21,5 +26,6 @@ class Caption(object):
     def text(self) -> str:
         pass
 
-def read(file : str) -> List[Caption]:
+
+def read(file: str) -> List[Caption]:
     pass

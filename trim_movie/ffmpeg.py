@@ -65,7 +65,7 @@ class _ConcatProgress(object):
         self.last_file_idx = -1
         self.pbar = tqdm(total=files_count)
 
-    def update(self, line: int) -> None:
+    def update(self, line: str) -> None:
         file_idx = self._get_concat_file_idx(line)
 
         # `file_idx` could be 0 so should check against `None`
