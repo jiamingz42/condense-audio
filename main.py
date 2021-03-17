@@ -22,16 +22,21 @@ def get_files(patterns: List[str]) -> List[str]:
         file_matches += glob(pattern)
     return file_matches
 
+def folder_exists(folder: str) -> str:
+    assert os.path.isdir(folder), "Folder %s not found" % folder
+    return val
 
 def main() -> int:
     parser = argparse.ArgumentParser(description='Process some integers.')
-    parser.add_argument('--vin', required=True,
-                        dest='video_in', help='Video infile')
+    parser.add_argument(
+        '--vin', required=True,
+        dest='video_in', help='Video infile')
     parser.add_argument('--out', help='Outfile')
-    parser.add_argument('--sin', dest='sub_in',
-                        help='Subtitle infile. If not present, infer from `video_in`. For example, if `video_in` is /path/to/foo.mp4, then this field will be /path/to/foo.vtt')
+    parser.add_argument(
+        '--sin', dest='sub_in',
+        help='Subtitle infile. If not present, infer from `video_in`. For example, if `video_in` is /path/to/foo.mp4, then this field will be /path/to/foo.vtt')
     parser.add_argument('--sout', dest='sub_out', help='Subtitle outfile.')
-    parser.add_argument('--tmpdir', default="/tmp/lingq")
+    parser.add_argument('--tmpdir', default="/tmp/lingq", type=folder_exists)
     parser.add_argument('--keep-tmpdir', default=False, action='store_true')
     parser.add_argument(
         '--print-subtitle',
@@ -67,7 +72,6 @@ def main() -> int:
         ])
         assert len(
             file_matches) == 1, "len(file_matches) is not 1. pattern = %s. file_matches = %s" % (pattern, file_matches)
-
         subtitle_infile = file_matches[0]
 
     if args.sub_out:
@@ -93,7 +97,6 @@ def main() -> int:
     assert os.path.isfile(video_infile), "File %s not found" % subtitle_infile
     assert os.path.isfile(
         subtitle_infile), "File %s not found" % subtitle_infile
-    assert os.path.isdir(args.tmpdir), "Folder %s not found" % args.tmpdir
 
     # Make sure the dir for outfile exists
     if not os.path.exists(final_outfile_dir):
