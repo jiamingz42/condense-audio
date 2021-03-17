@@ -13,9 +13,9 @@ def cut_out_video(infile: str, outfile: str, start_time, duration) -> None:
     _run_command(cmd)
 
 
-def concat_video(infile: str, outfile: str, files_count: int) -> None:
+def concat_audio_segments(list_file: str, outfile: str, files_count: int) -> None:
     cmd = ("ffmpeg -hide_banner -loglevel debug -safe 0 -f concat " +
-           f"-segment_time_metadata 1 -i {infile} " +
+           f"-segment_time_metadata 1 -i {list_file} " +
            "-vf select=concatdec_select " +
            f"-af aselect=concatdec_select,aresample=async=1 -y '{outfile}'")
     with Popen(shlex.split(cmd), stdout=PIPE, stderr=STDOUT) as proc:

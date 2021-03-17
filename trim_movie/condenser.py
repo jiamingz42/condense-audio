@@ -1,5 +1,5 @@
 from tqdm import tqdm
-from trim_movie.ffmpeg import concat_video, get_duration, cut_out_video
+from trim_movie.ffmpeg import concat_audio_segments, get_duration, cut_out_video
 from trim_movie.subtitle import create_adjusted_subtile, group_captions, load_captions, AnyCaption
 from trim_movie.type import *
 from typing import Any, Callable, List
@@ -69,7 +69,7 @@ class AudioCondenser(object):
 
         # TODO: Progress bar?
         print("Concating %d audio segments ..." % len(self.outfiles))
-        concat_video(config.list_file_path, output_files.audio_path, len(self.outfiles))
+        concat_audio_segments(config.list_file_path, output_files.audio_path, len(self.outfiles))
 
         group_durations = [
             *map(lambda group: group[-1].end - group[0].start, groups)]
