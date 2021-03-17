@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from subprocess import *
-from typing import NamedTuple, List
+from typing import NamedTuple, List, Any
 from tqdm import tqdm
 from trim_movie.timestamp import Timestamp
 from trim_movie.ffmpeg import concat_video, get_duration, cut_out_video
@@ -127,12 +127,15 @@ def main() -> int:
 
 
 # TODO: Provide these function via extension
-def is_valid_subtitle(caption: webvtt.Caption) -> bool:
-    if '♪' in caption.text:
-        return False
-    if (caption.end - caption.start).total_milliseconds < 0:
-        raise ValueError("Invalid capton")
-    return True
+def is_valid_subtitle(filename: str, caption: Any) -> bool:
+    if filename.endswith(".vtt"):
+        if '♪' in caption.text:
+            return False
+        if (caption.end - caption.start).total_milliseconds < 0:
+            raise ValueError("Invalid capton")
+        return True
+    else:
+        return True
 
 
 def map_subtile(caption: webvtt.Caption) -> webvtt.Caption:
