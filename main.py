@@ -96,7 +96,7 @@ def main() -> int:
     audioCondenser: condenser.AudioCondenser = condenser.Builder()\
         .setInputFiles(InputFiles(video_infile, subtitle_infile))\
         .setOutputFiles(OutputFiles(final_outfile, subtitle_outfile))\
-        .setConfiguration(Configuration(args.print_subtitle, tmpdir, list_file_path, keep_tmpdir))\
+        .setConfiguration(Configuration(args.print_subtitle, list_file_path, tmpdir,  keep_tmpdir))\
         .setIsValidSubtitleFunc(is_valid_subtitle)\
         .setMapSubtitleFunc(map_subtile)\
         .build()

@@ -21,9 +21,9 @@ class OutputFiles(NamedTuple):
     subtitle_path: str
 
 
-# TODO: Move `tmpdir` and `keep_tmpdir` together
 class Configuration(NamedTuple):
     print_subtitle: bool
-    tmpdir: str
     list_file_path: str
+
+    tmpdir: str
     keep_tmpdir: bool
