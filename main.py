@@ -15,28 +15,7 @@ import ass
 import math
 import os
 import re
-import shlex
 import webvtt
-
-
-class InputFiles(NamedTuple):
-    video_path: str
-    subtitle_path: str
-
-
-class IntermediateOutfile(NamedTuple):
-    path: str
-    duration: Timestamp
-
-
-class OutputFiles(NamedTuple):
-    audio_path: str
-    subtitle_path: str
-
-
-class Configuration(NamedTuple):
-    print_subtitle: bool
-    tmpdir: str
 
 
 def main() -> int:
@@ -165,7 +144,7 @@ def map_subtile(caption: webvtt.Caption) -> webvtt.Caption:
 
 def create_condense_audio(input_files: InputFiles,
                           output_files: OutputFiles,
-                          config : Configuration,
+                          config: Configuration,
                           list_file_path: str,
                           outfiles: List[IntermediateOutfile]) -> None:
     captions = load_captions(input_files.subtitle_path,
