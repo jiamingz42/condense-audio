@@ -10,7 +10,51 @@ class Caption(NamedTuple):
     end: Timestamp
     text: str
 
+
+class CaptionGroup(object):
+    def __init__(self, caption: List[Caption] = None):
+        self.captions: List[Caption] = [] if caption is None else caption
+
+    def __str__(self):
+        return f"CaptionGroup(captions={self.captions})>"
+
+    def __repr__(self):
+        return self.__str__()
+
+    def __eq__(self, other : "CaptionGroup"):
+        if type(other) != CaptionGroup:
+            return False
+
+        if len(self.captions) != len(other.captions):
+            return False
+
+        return all([c1 == c2 for c1, c2 in zip(self.captions, other.captions)])
+
+    def append(self, caption: Caption):
+        self.captions.append(caption)
+
+    @property
+    def start(self):
+        assert len(self.captions) > 0
+        return captions[0].start
+
+    @property
+    def end(self):
+        assert len(self.captions) > 0
+        return captions[-1].end
+
+    @property
+    def duration(self):
+        assert len(self.captions) > 0
+        return self.end - self.start
+
+    @staticmethod
+    def of(caption: Caption) -> "CaptionGroup":
+        return CaptionGroup([caption])
+
+
 AnyCaption = Union[webvtt.Caption, ass.line.Dialogue]
+
 
 # TODO: map_subtitle -> Generic type?
 def load_captions(subtitle_infile: str,
@@ -50,12 +94,16 @@ def read_ass(infile: str,
             )
 
 
-def group_captions(captions: List[Caption], interval: int) -> List[List[Caption]]:
-    groups: List[List[Caption]] = [[]]
-    for i, caption in enumerate(captions):
-        if i > 0 and (caption.start - captions[i - 1].end).total_milliseconds > interval:
-            groups.append([])
-        groups[-1].append(caption)
+def group_captions(captions: List[Caption], interval: int) -> List[CaptionGroup]:
+    if len(captions) == 0:
+        return []
+
+    groups: List[CaptionGroup] = [CaptionGroup([captions[0]])]
+    for last_caption, caption in zip(captions, captions[1:]):
+        if (caption.start - last_caption.end).total_milliseconds > interval:
+            groups.append(CaptionGroup.of(caption))
+        else:
+            groups[-1].append(caption)
     return groups
 
 
