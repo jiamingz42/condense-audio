@@ -41,9 +41,12 @@ def main() -> int:
 
     args = parser.parse_args()
 
-    tmpdir = args.tmpdir
-    keep_tmpdir = args.keep_tmpdir
     video_infile = os.path.abspath(args.video_in)
+    configuration = Configuration(
+        args.print_subtitle,
+        os.path.join(args.tmpdir, "list.txt"),
+        args.tmpdir,
+        args.keep_tmpdir)
 
     if args.sub_in:
         subtitle_infile = os.path.abspath(args.sub_in)
@@ -86,12 +89,11 @@ def main() -> int:
             video_infile), 'condensed', final_outfile_name)
 
     final_outfile_dir = os.path.dirname(final_outfile)
-    list_file_path = os.path.join(tmpdir, "list.txt")
 
     assert os.path.isfile(video_infile), "File %s not found" % subtitle_infile
     assert os.path.isfile(
         subtitle_infile), "File %s not found" % subtitle_infile
-    assert os.path.isdir(tmpdir), "Folder %s not found" % tmpdir
+    assert os.path.isdir(args.tmpdir), "Folder %s not found" % args.tmpdir
 
     # Make sure the dir for outfile exists
     if not os.path.exists(final_outfile_dir):
@@ -108,7 +110,7 @@ def main() -> int:
     audioCondenser: condenser.AudioCondenser = condenser.Builder()\
         .setInputFiles(InputFiles(video_infile, subtitle_infile))\
         .setOutputFiles(OutputFiles(final_outfile, subtitle_outfile))\
-        .setConfiguration(Configuration(args.print_subtitle, list_file_path, tmpdir,  keep_tmpdir))\
+        .setConfiguration(configuration)\
         .setIsValidSubtitleFunc(is_valid_subtitle)\
         .setMapSubtitleFunc(map_subtile)\
         .build()
