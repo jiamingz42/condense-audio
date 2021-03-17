@@ -21,7 +21,7 @@ class CaptionGroup(object):
     def __repr__(self):
         return self.__str__()
 
-    def __eq__(self, other : "CaptionGroup"):
+    def __eq__(self, other):
         if type(other) != CaptionGroup:
             return False
 
@@ -107,16 +107,16 @@ def group_captions(captions: List[Caption], interval: int) -> List[CaptionGroup]
     return groups
 
 
-def create_adjusted_subtile(groups: List[List[Caption]]) -> webvtt.WebVTT:
+def create_adjusted_subtile(groups: List[CaptionGroup]) -> webvtt.WebVTT:
     vtt = webvtt.WebVTT()
     for i, group in enumerate(groups):
         if i == 0:
-            shift = group[0].start
+            shift = group.start
         else:
             last_timestamp = Timestamp.from_s(vtt.captions[-1].end)
-            shift = (group[0].start - last_timestamp).map(lambda x: x - 1)
+            shift = (group.start - last_timestamp).map(lambda x: x - 1)
 
-        for caption in group:
+        for caption in group.captions:
             vtt_caption = webvtt.Caption(
                 str(caption.start - shift),
                 str(caption.end - shift),
