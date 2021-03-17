@@ -9,12 +9,11 @@ from trim_movie.subtitle import Caption, read_webvtt, group_captions, create_adj
 from trim_movie.timestamp import Timestamp
 from trim_movie.type import *
 from trim_movie import condenser
-from typing import NamedTuple, List, Any, Union
+from typing import Union
 
 
 import argparse
 import ass
-import math
 import os
 import re
 import webvtt

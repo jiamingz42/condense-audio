@@ -66,7 +66,6 @@ def create_adjusted_subtile(groups: List[List[Caption]]) -> webvtt.WebVTT:
         else:
             last_timestamp = Timestamp.from_s(vtt.captions[-1].end)
             shift = (group[0].start - last_timestamp).map(lambda x: x - 1)
-            pass
 
         for caption in group:
             caption = webvtt.Caption(
