@@ -7,8 +7,8 @@ from typing import Any, Callable, List
 import os
 
 
+# TODO: [P0] Can run in parallel
 class AudioCondenser(object):
-    # TODO: Type hinting
     def __init__(
             self,
             input_files: InputFiles,
@@ -65,14 +65,11 @@ class AudioCondenser(object):
             )
             outfiles.append(IntermediateOutfile(outfile, duration))
 
-        with open(config.list_file_path, "w") as list_txt:
-            for f in outfiles:
-                list_txt.write(f"file '{f.path}'\n")
-                list_txt.write(f"duration {f.duration.total_seconds}\n")
+        self.write_to_list_file()
 
         # TODO: Progress bar?
-        print("Concating audio segments ...")
-        concat_video(config.list_file_path, output_files.audio_path)
+        print("Concating %d audio segments ..." % len(self.outfiles))
+        concat_video(config.list_file_path, output_files.audio_path, len(self.outfiles))
 
         group_durations = [
             *map(lambda group: group[-1].end - group[0].start, groups)]
@@ -92,6 +89,12 @@ class AudioCondenser(object):
         outfile_duration = get_duration(output_files.audio_path)
         print(f"Output duration is %.2f%% of the original" %
               (outfile_duration / video_in_duration * 100))
+
+    def write_to_list_file(self) -> None:
+        with open(self.config.list_file_path, "w") as list_txt:
+            for f in self.outfiles:
+                list_txt.write(f"file '{f.path}'\n")
+                list_txt.write(f"duration {f.duration.total_seconds}\n")
 
 
 class Builder(object):
