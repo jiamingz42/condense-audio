@@ -4,6 +4,7 @@ from typing import NamedTuple, List, Callable, Iterator, Any
 import ass
 import webvtt
 
+
 class Caption(NamedTuple):
     start: Timestamp
     end: Timestamp
@@ -15,31 +16,37 @@ def load_captions(subtitle_infile: str,
                   is_valid_subtitle: Callable[[Any], bool],
                   map_subtile: Callable[[Any], Any]) -> List[Caption]:
     if subtitle_infile.endswith(".vtt"):
-        return [*map(map_subtile, filter(is_valid_subtitle, read_webvtt(subtitle_infile)))]
+        return [*map(map_subtile, read_webvtt(subtitle_infile, is_valid_subtitle))]
     elif subtitle_infile.endswith(".ass"):
-        return [*read_ass(subtitle_infile)]
+        return [*read_ass(subtitle_infile, lambda v: True)]
     else:
         raise ValueError("Unsupported subtitle type: %s" % subtitle_infile)
 
 
-def read_webvtt(infile: str) -> Iterator[Caption]:
+def read_webvtt(infile: str,
+                is_valid_subtitle: Callable[[webvtt.Caption], bool]
+                ) -> Iterator[Caption]:
     for caption in webvtt.read(infile):
-        yield Caption(
-            Timestamp.from_s(caption.start),
-            Timestamp.from_s(caption.end),
-            caption.text
-        )
+        if is_valid_subtitle(caption):
+            yield Caption(
+                Timestamp.from_s(caption.start),
+                Timestamp.from_s(caption.end),
+                caption.text
+            )
 
-def read_ass(infile: str) -> Iterator[Caption]:
+
+def read_ass(infile: str,
+             is_valid_subtitle: Callable[[ass.line.Dialogue], bool]
+             ) -> Iterator[Caption]:
     with open(infile, "r") as f:
         ass_subtitle = ass.parse(f)
     for event in ass_subtitle.events:
-        # TODO: Can filter by style
-        yield Caption(
-            Timestamp.from_timedelta(event.start),
-            Timestamp.from_timedelta(event.end),
-            event.text
-        )
+        if is_valid_subtitle(event):
+            yield Caption(
+                Timestamp.from_timedelta(event.start),
+                Timestamp.from_timedelta(event.end),
+                event.text
+            )
 
 
 def group_captions(captions: List[Caption], interval: int) -> List[List[Caption]]:
