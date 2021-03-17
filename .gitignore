@@ -14,3 +14,4 @@ __pycache__/
 tmp
 .cache/
 out.gif
+.mypy_cache
