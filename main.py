@@ -34,6 +34,10 @@ class OutputFiles(NamedTuple):
     subtitle_path: str
 
 
+class Configuration(NamedTuple):
+    print_subtitle: bool
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description='Process some integers.')
     parser.add_argument('--vin', required=True,
@@ -44,6 +48,11 @@ def main() -> int:
     parser.add_argument('--sout', dest='sub_out', help='Subtitle outfile.')
     parser.add_argument('--tmpdir', default="/tmp/lingq")
     parser.add_argument('--keep-tmpdir', default=False, action='store_true')
+    parser.add_argument(
+        '--print-subtitle',
+        default=False,
+        action='store_true',
+        help='If true, only print filtered / processed subtitle w/o processing the video')
 
     args = parser.parse_args()
 
@@ -108,12 +117,14 @@ def main() -> int:
 
     outfiles: List[IntermediateOutfile] = []  # will be mutated
     try:
+        # TODO: Improve the clean-up flow
         create_condense_audio(
             InputFiles(video_infile, subtitle_infile),
             OutputFiles(final_outfile, subtitle_outfile),
             tmpdir,
             list_file_path,
-            outfiles)
+            outfiles,
+            Configuration(args.print_subtitle))
     finally:
         # Clean up
         try:
@@ -156,9 +167,15 @@ def create_condense_audio(input_files: InputFiles,
                           output_files: OutputFiles,
                           tmpdir: str,
                           list_file_path: str,
-                          outfiles: List[IntermediateOutfile]):
+                          outfiles: List[IntermediateOutfile],
+                          config : Configuration):
     captions = load_captions(input_files.subtitle_path,
                              is_valid_subtitle, map_subtile)
+    if config.print_subtitle:
+        for i, caption in enumerate(captions):
+            print("%3d %s" % (i, caption.text))
+        return
+
     groups = group_captions(captions, 1000)
 
     print("Creating audio segments based on the subtitle ...")
