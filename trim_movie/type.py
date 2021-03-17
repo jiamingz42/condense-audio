@@ -24,3 +24,4 @@ class OutputFiles(NamedTuple):
 class Configuration(NamedTuple):
     print_subtitle: bool
     tmpdir: str
+    list_file_path: str
