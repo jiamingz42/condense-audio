@@ -15,19 +15,15 @@ def cut_out_video(infile: str, outfile: str, start_time, duration) -> None:
 
 
 def concat_audio_segments(list_file: str, outfile: str, files_count: int) -> None:
+    # NOTE: Need to set loglevel to debug to track the progress of concatenation
     cmd = ("ffmpeg -hide_banner -loglevel debug -safe 0 -f concat " +
            f"-segment_time_metadata 1 -i {list_file} " +
            "-vf select=concatdec_select " +
            f"-af aselect=concatdec_select,aresample=async=1 -y '{outfile}'")
     with Popen(shlex.split(cmd), stdout=PIPE, stderr=STDOUT) as proc:
-        with tqdm(total=files_count) as pbar:
-            last_file_idx = -1
-            for idx, line in _readlines_with_idx(proc.stdout):
-                file_idx = _get_concat_file_idx(line)
-                # `file_idx` could be 0 so should check against `None`
-                if file_idx is not None and last_file_idx != file_idx:
-                    last_file_idx = file_idx
-                    pbar.update(1)
+        progress = _ConcatProgress(files_count)
+        for idx, line in _readlines_with_idx(proc.stdout):
+            progress.update(line)
 
 
 def get_duration(infile: str) -> float:
@@ -64,14 +60,30 @@ def _run_command(cmd: str) -> None:
             print(stdout)
 
 
-def _get_concat_file_idx(line: str) -> Union[None, int]:
-    """
-    Extract file index (in this case, 10) from a line as following
-    `[concat @ 0x7fbfa0808200] file:10 stream:0 pts:16859136 pts_time:0.597333 dts:16859136 dts_time:0.597333 -> pts:1547164416 pts_time:54.8173 dts:1547164416 dts_time:54.8173`
-    """
-    if not ('[concat' in line and ' file:' in line):
-        return None
-    _, tail = line.split('] ')
-    file_stat = tail.split(' ')[0]
-    assert 'file:' in file_stat, f"Invalid format: {file_stat}\nFull Line: \"{line}\""
-    return int(file_stat.split(":")[1])
+class _ConcatProgress(object):
+    def __init__(self, files_count: int):
+        self.last_file_idx = -1
+        self.pbar = tqdm(total=files_count)
+
+    def update(self, line: int) -> None:
+        file_idx = self._get_concat_file_idx(line)
+
+        # `file_idx` could be 0 so should check against `None`
+        if file_idx is None:
+            return
+        if self.last_file_idx != file_idx:
+            self.last_file_idx = file_idx
+            self.pbar.update(1)
+
+    @staticmethod
+    def _get_concat_file_idx(line: str) -> Union[None, int]:
+        """
+        Extract file index (in this case, 10) from a line as following
+        `[concat @ 0x7fbfa0808200] file:10 stream:0 pts:16859136 pts_time:0.597333 dts:16859136 dts_time:0.597333 -> pts:1547164416 pts_time:54.8173 dts:1547164416 dts_time:54.8173`
+        """
+        if not ('[concat' in line and ' file:' in line):
+            return None
+        _, tail = line.split('] ')
+        file_stat = tail.split(' ')[0]
+        assert 'file:' in file_stat, f"Invalid format: {file_stat}\nFull Line: \"{line}\""
+        return int(file_stat.split(":")[1])
