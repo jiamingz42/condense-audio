@@ -50,20 +50,21 @@ class AudioCondenser(object):
                 print("%3d %s" % (i, caption.text))
             return
 
+        # TODO: CaptionGroup#start, #end, #captions
         groups = group_captions(captions, 1000)
 
         print("Creating audio segments based on the subtitle ...")
         for i, group in enumerate(tqdm(groups)):
             start, end = group[0].start, group[-1].end
             duration = end - start
-            outfile = os.path.abspath("%s/out_%03d.aac" % (config.tmpdir, i))
+            intermediate_outfile = os.path.abspath(f"{config.tmpdir}/out_{i:03d}.aac")
             cut_out_video(
                 input_files.video_path,
-                outfile,
+                intermediate_outfile,
                 str(start),
                 str(duration),
             )
-            outfiles.append(IntermediateOutfile(outfile, duration))
+            outfiles.append(IntermediateOutfile(intermediate_outfile, duration))
 
         self.write_to_list_file()
 
@@ -71,6 +72,7 @@ class AudioCondenser(object):
         print("Concating %d audio segments ..." % len(self.outfiles))
         concat_audio_segments(config.list_file_path, output_files.audio_path, len(self.outfiles))
 
+        # TODO: Put it into a helper method
         group_durations = [
             *map(lambda group: group[-1].end - group[0].start, groups)]
         group_durations_acc = []
