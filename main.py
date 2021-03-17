@@ -134,8 +134,11 @@ def is_valid_subtitle(filename: str, caption: Any) -> bool:
         if (caption.end - caption.start).total_milliseconds < 0:
             raise ValueError("Invalid capton")
         return True
+    elif filename.endswith(".ass"):
+        # TODO: Hardcoded - won't work for another *.ass file
+        return caption.style == '*Default-ja'
     else:
-        return True
+        raise ValueError("Invalid subtitle: %s" % filename)
 
 
 def map_subtile(caption: webvtt.Caption) -> webvtt.Caption:
