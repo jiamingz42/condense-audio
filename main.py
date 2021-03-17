@@ -1,13 +1,15 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
+from glob import glob
 from subprocess import *
-from typing import NamedTuple, List, Any, Union
 from tqdm import tqdm
-from trim_movie.timestamp import Timestamp
 from trim_movie.ffmpeg import concat_video, get_duration, cut_out_video
 from trim_movie.subtitle import Caption, read_webvtt, group_captions, create_adjusted_subtile, load_captions
-from glob import glob
+from trim_movie.timestamp import Timestamp
+from trim_movie.type import *
+from trim_movie import condenser
+from typing import NamedTuple, List, Any, Union
 
 
 import argparse
@@ -95,24 +97,16 @@ def main() -> int:
           '  Audio = "%s"\n' % final_outfile +
           '  Sub = "%s"\n' % subtitle_outfile)
 
-    outfiles: List[IntermediateOutfile] = []  # will be mutated
-    try:
-        # TODO: Improve the clean-up flow
-        create_condense_audio(
-            InputFiles(video_infile, subtitle_infile),
-            OutputFiles(final_outfile, subtitle_outfile),
-            Configuration(args.print_subtitle, tmpdir),
-            list_file_path,
-            outfiles)
-    finally:
-        # Clean up
-        try:
-            os.remove(list_file_path)
-        except FileNotFoundError:
-            pass
-        if not keep_tmpdir:
-            for outfile in outfiles:
-                os.remove(outfile.path)
+    audioCondenser: condenser.AudioCondenser = condenser.Builder()\
+        .setInputFiles(InputFiles(video_infile, subtitle_infile))\
+        .setOutputFiles(OutputFiles(final_outfile, subtitle_outfile))\
+        .setConfiguration(Configuration(args.print_subtitle, tmpdir, list_file_path, keep_tmpdir))\
+        .setIsValidSubtitleFunc(is_valid_subtitle)\
+        .setMapSubtitleFunc(map_subtile)\
+        .build()
+
+    with audioCondenser as c:
+        c.run()
 
     return 0
 
@@ -140,61 +134,6 @@ def map_subtile(caption: webvtt.Caption) -> webvtt.Caption:
     if new_text == caption.text:
         return caption
     return Caption(caption.start, caption.end, new_text)
-
-
-def create_condense_audio(input_files: InputFiles,
-                          output_files: OutputFiles,
-                          config: Configuration,
-                          list_file_path: str,
-                          outfiles: List[IntermediateOutfile]) -> None:
-    captions = load_captions(input_files.subtitle_path,
-                             is_valid_subtitle, map_subtile)
-    if config.print_subtitle:
-        for i, caption in enumerate(captions):
-            print("%3d %s" % (i, caption.text))
-        return
-
-    groups = group_captions(captions, 1000)
-
-    print("Creating audio segments based on the subtitle ...")
-    for i, group in enumerate(tqdm(groups)):
-        start, end = group[0].start, group[-1].end
-        duration = end - start
-        outfile = os.path.abspath("%s/out_%03d.aac" % (config.tmpdir, i))
-        cut_out_video(
-            input_files.video_path,
-            outfile,
-            str(start),
-            str(duration),
-        )
-        outfiles.append(IntermediateOutfile(outfile, duration))
-
-    with open(list_file_path, "w") as list_txt:
-        for f in outfiles:
-            list_txt.write(f"file '{f.path}'\n")
-            list_txt.write(f"duration {f.duration.total_seconds}\n")
-
-    print("Concating audio segments ...")
-    concat_video(list_file_path, output_files.audio_path)
-
-    group_durations = [
-        *map(lambda group: group[-1].end - group[0].start, groups)]
-    group_durations_acc = []
-    for i, group_duration in enumerate(group_durations):
-        if i == 0:
-            group_durations_acc.append(group_duration)
-        else:
-            group_durations_acc.append(
-                group_durations_acc[-1] + group_duration)
-    assert len(group_durations_acc) == len(group_durations)
-
-    vtt = create_adjusted_subtile(groups)
-    vtt.save(output_files.subtitle_path)
-
-    video_in_duration = get_duration(input_files.video_path)
-    outfile_duration = get_duration(output_files.audio_path)
-    print(f"Output duration is %.2f%% of the original" %
-          (outfile_duration / video_in_duration * 100))
 
 
 if __name__ == '__main__':
