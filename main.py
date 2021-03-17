@@ -23,7 +23,7 @@ class InputFiles(NamedTuple):
     subtitle_path: str
 
 
-class Outfile(NamedTuple):
+class IntermediateOutfile(NamedTuple):
     path: str
     duration: Timestamp
 
@@ -100,7 +100,7 @@ def main() -> int:
           '  Audio = "%s"\n' % final_outfile +
           '  Sub = "%s"\n' % subtitle_outfile)
 
-    outfiles: List[Outfile] = []  # will be mutated
+    outfiles: List[IntermediateOutfile] = []  # will be mutated
     try:
         create_condense_audio(
             InputFiles(video_infile, subtitle_infile),
@@ -143,7 +143,7 @@ def create_condense_audio(input_files: InputFiles,
                           subtitle_outfile: str,
                           final_outfile: str,
                           list_file_path: str,
-                          outfiles: List[Outfile]):
+                          outfiles: List[IntermediateOutfile]):
     captions = load_captions(input_files.subtitle_path,
                              is_valid_subtitle, map_subtile)
     groups = group_captions(captions, 1000)
@@ -159,7 +159,7 @@ def create_condense_audio(input_files: InputFiles,
             str(start),
             str(duration),
         )
-        outfiles.append(Outfile(outfile, duration))
+        outfiles.append(IntermediateOutfile(outfile, duration))
 
     with open(list_file_path, "w") as list_txt:
         for f in outfiles:
