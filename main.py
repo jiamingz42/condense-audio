@@ -24,7 +24,7 @@ def get_files(patterns: List[str]) -> List[str]:
 
 def folder_exists(folder: str) -> str:
     assert os.path.isdir(folder), "Folder %s not found" % folder
-    return val
+    return folder
 
 def main() -> int:
     parser = argparse.ArgumentParser(description='Process some integers.')
