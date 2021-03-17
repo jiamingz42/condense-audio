@@ -128,20 +128,22 @@ def main() -> int:
 def is_valid_subtitle(
         filename: str,
         caption: Union[webvtt.Caption, ass.line.Dialogue]) -> bool:
-    if filename.endswith(".vtt"):
+    if isinstance(caption, webvtt.Caption):
         if '♪' in caption.text:
             return False
-        if (caption.end - caption.start).total_milliseconds < 0:
-            raise ValueError("Invalid capton: %s" % str(caption))
+        if (len(caption.end) != len(caption.start)):
+            raise ValueError("Caption start & end doesn't have the same len: %s" % str(caption))
+        if (caption.end < caption.start):
+            raise ValueError("Caption end < caption start: %s" % str(caption))
         return True
-    elif filename.endswith(".ass"):
+    elif isinstance(caption, ass.line.Dialogue):
         # TODO: Hardcoded - won't work for another *.ass file
         return caption.style == '*Default-ja'
     else:
         raise ValueError("Invalid subtitle: %s" % filename)
 
 
-def map_subtile(caption: webvtt.Caption) -> webvtt.Caption:
+def map_subtile(caption: Caption) -> Caption:
     new_text = re.sub("\(.+\)", "", caption.text)
     if new_text == caption.text:
         return caption
