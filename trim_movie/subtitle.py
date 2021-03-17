@@ -36,12 +36,12 @@ class CaptionGroup(object):
     @property
     def start(self):
         assert len(self.captions) > 0
-        return captions[0].start
+        return self.captions[0].start
 
     @property
     def end(self):
         assert len(self.captions) > 0
-        return captions[-1].end
+        return self.captions[-1].end
 
     @property
     def duration(self):

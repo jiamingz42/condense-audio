@@ -4,6 +4,12 @@ import unittest
 
 
 class TestSubtitle(unittest.TestCase):
+    def test_group_captions_duration(self):
+        group = CaptionGroup()
+        group.append(Caption(Timestamp(0), Timestamp(1000), "Foo"))
+        group.append(Caption(Timestamp(2000), Timestamp(3000), "Bar"))
+        assert group.duration == Timestamp(3000)
+
     def test_group_captions_empty_captions(self):
         assert len(group_captions([], 1000)) == 0
 
