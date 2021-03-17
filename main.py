@@ -18,6 +18,11 @@ import shlex
 import webvtt
 
 
+class InputFiles(NamedTuple):
+    video_path: str
+    subtitle_path: str
+
+
 class Outfile(NamedTuple):
     path: str
     duration: Timestamp
@@ -95,10 +100,15 @@ def main() -> int:
           '  Audio = "%s"\n' % final_outfile +
           '  Sub = "%s"\n' % subtitle_outfile)
 
-    outfiles : List[Outfile] = []  # will be mutated
+    outfiles: List[Outfile] = []  # will be mutated
     try:
-        create_condense_audio(tmpdir, subtitle_infile, subtitle_outfile,
-                              video_infile, final_outfile, list_file_path, outfiles)
+        create_condense_audio(
+            InputFiles(video_infile, subtitle_infile),
+            tmpdir,
+            subtitle_outfile,
+            final_outfile,
+            list_file_path,
+            outfiles)
     finally:
         # Clean up
         try:
@@ -128,8 +138,14 @@ def map_subtile(caption: webvtt.Caption) -> webvtt.Caption:
     return Caption(caption.start, caption.end, new_text)
 
 
-def create_condense_audio(tmpdir: str, subtitle_infile: str, subtitle_outfile: str, video_infile: str, final_outfile: str, list_file_path: str, outfiles: List[Outfile]):
-    captions = load_captions(subtitle_infile, is_valid_subtitle, map_subtile)
+def create_condense_audio(input_files: InputFiles,
+                          tmpdir: str,
+                          subtitle_outfile: str,
+                          final_outfile: str,
+                          list_file_path: str,
+                          outfiles: List[Outfile]):
+    captions = load_captions(input_files.subtitle_path,
+                             is_valid_subtitle, map_subtile)
     groups = group_captions(captions, 1000)
 
     print("Creating audio segments based on the subtitle ...")
@@ -138,7 +154,7 @@ def create_condense_audio(tmpdir: str, subtitle_infile: str, subtitle_outfile: s
         duration = end - start
         outfile = os.path.abspath("%s/out_%03d.aac" % (tmpdir, i))
         cut_out_video(
-            video_infile,
+            input_files.video_path,
             outfile,
             str(start),
             str(duration),
@@ -167,7 +183,7 @@ def create_condense_audio(tmpdir: str, subtitle_infile: str, subtitle_outfile: s
     vtt = create_adjusted_subtile(groups)
     vtt.save(subtitle_outfile)
 
-    video_in_duration = get_duration(video_infile)
+    video_in_duration = get_duration(input_files.video_path)
     outfile_duration = get_duration(final_outfile)
     print(f"Output duration is %.2f%% of the original" %
           (outfile_duration / video_in_duration * 100))
