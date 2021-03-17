@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from subprocess import *
-from typing import NamedTuple, List, Any
+from typing import NamedTuple, List, Any, Union
 from tqdm import tqdm
 from trim_movie.timestamp import Timestamp
 from trim_movie.ffmpeg import concat_video, get_duration, cut_out_video
@@ -11,6 +11,7 @@ from glob import glob
 
 
 import argparse
+import ass
 import math
 import os
 import re
@@ -127,12 +128,15 @@ def main() -> int:
 
 
 # TODO: Provide these function via extension
-def is_valid_subtitle(filename: str, caption: Any) -> bool:
+def is_valid_subtitle(
+        filename: str,
+        caption: Union[webvtt.Caption, ass.line.Dialogue]
+) -> bool:
     if filename.endswith(".vtt"):
         if '♪' in caption.text:
             return False
         if (caption.end - caption.start).total_milliseconds < 0:
-            raise ValueError("Invalid capton")
+            raise ValueError("Invalid capton: %s" % str(caption))
         return True
     elif filename.endswith(".ass"):
         # TODO: Hardcoded - won't work for another *.ass file
