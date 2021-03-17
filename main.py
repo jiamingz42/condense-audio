@@ -36,6 +36,7 @@ class OutputFiles(NamedTuple):
 
 class Configuration(NamedTuple):
     print_subtitle: bool
+    tmpdir: str
 
 
 def main() -> int:
@@ -121,10 +122,9 @@ def main() -> int:
         create_condense_audio(
             InputFiles(video_infile, subtitle_infile),
             OutputFiles(final_outfile, subtitle_outfile),
-            tmpdir,
+            Configuration(args.print_subtitle, tmpdir),
             list_file_path,
-            outfiles,
-            Configuration(args.print_subtitle))
+            outfiles)
     finally:
         # Clean up
         try:
@@ -165,10 +165,9 @@ def map_subtile(caption: webvtt.Caption) -> webvtt.Caption:
 
 def create_condense_audio(input_files: InputFiles,
                           output_files: OutputFiles,
-                          tmpdir: str,
+                          config : Configuration,
                           list_file_path: str,
-                          outfiles: List[IntermediateOutfile],
-                          config : Configuration):
+                          outfiles: List[IntermediateOutfile]) -> None:
     captions = load_captions(input_files.subtitle_path,
                              is_valid_subtitle, map_subtile)
     if config.print_subtitle:
@@ -182,7 +181,7 @@ def create_condense_audio(input_files: InputFiles,
     for i, group in enumerate(tqdm(groups)):
         start, end = group[0].start, group[-1].end
         duration = end - start
-        outfile = os.path.abspath("%s/out_%03d.aac" % (tmpdir, i))
+        outfile = os.path.abspath("%s/out_%03d.aac" % (config.tmpdir, i))
         cut_out_video(
             input_files.video_path,
             outfile,
