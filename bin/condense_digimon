@@ -1,0 +1,20 @@
+#!/bin/zsh
+
+# Example
+#   Use this script to get condensed audio for the Digimon anime
+
+VIDEO_DIR="$HOME/Movies/Netflix/Digimon Adventure/第 1 季"
+SUB_DIR="$HOME/Movies/Netflix/Digimon Adventure/第 1 季/Subtitles"
+OUT_DIR="$HOME/Movies/Netflix/Digimon Adventure/第 1 季/Condense"
+OUT_DIR="$HOME/Movies/Netflix/Digimon Adventure/第 1 季/Condense"
+
+START=$1
+END=$2
+
+for idx in $(seq -w $START $END); do 
+  idx=${(l:2::0:)idx}
+  VIDEO_FILE_NAME=$(ls $VIDEO_DIR/*E$idx*)
+  SUB_FILE_NAME=$(ls $SUB_DIR/*E$idx*)
+  OUT_NAME="$VIDEO_FILE_NAME:t:r"
+  python main.py --sin "$SUB_FILE_NAME" --vin "$VIDEO_FILE_NAME" --sout "$OUT_DIR/$idx.vtt"  --out "$OUT_DIR/$idx.mp3"
+done
