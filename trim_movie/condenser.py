@@ -85,16 +85,19 @@ class AudioCondenser(object):
         vtt = create_adjusted_subtile(groups)
         vtt.save(output_files.subtitle_path)
 
-        video_in_duration = get_duration(input_files.video_path)
-        outfile_duration = get_duration(output_files.audio_path)
-        print(f"Output duration is %.2f%% of the original" %
-              (outfile_duration / video_in_duration * 100))
+        self.print_duration_percent()
 
     def write_to_list_file(self) -> None:
         with open(self.config.list_file_path, "w") as list_txt:
             for f in self.outfiles:
                 list_txt.write(f"file '{f.path}'\n")
                 list_txt.write(f"duration {f.duration.total_seconds}\n")
+
+    def print_duration_percent(self):
+        video_in_duration = get_duration(self.input_files.video_path)
+        outfile_duration = get_duration(self.output_files.audio_path)
+        duration_percent = outfile_duration / video_in_duration * 100
+        print(f"Output duration is {duration_percent:.2f} of the original")
 
 
 class Builder(object):
