@@ -1,5 +1,5 @@
 from trim_movie.timestamp import Timestamp
-from typing import NamedTuple, List, Callable, Iterator, Any
+from typing import NamedTuple, List, Callable, Iterator, Any, Union
 
 import ass
 import webvtt
@@ -10,10 +10,11 @@ class Caption(NamedTuple):
     end: Timestamp
     text: str
 
+AnyCaption = Union[webvtt.Caption, ass.line.Dialogue]
 
 # TODO: map_subtitle -> Generic type?
 def load_captions(subtitle_infile: str,
-                  is_valid_subtitle: Callable[[str, Any], bool],
+                  is_valid_subtitle: Callable[[str, AnyCaption], bool],
                   map_subtile: Callable[[Any], Any]) -> List[Caption]:
     if subtitle_infile.endswith(".vtt"):
         return [*map(map_subtile, read_webvtt(subtitle_infile, is_valid_subtitle))]

@@ -1,20 +1,21 @@
 from tqdm import tqdm
 from trim_movie.ffmpeg import concat_video, get_duration, cut_out_video
+from trim_movie.subtitle import create_adjusted_subtile, group_captions, load_captions, AnyCaption
 from trim_movie.type import *
-from trim_movie.subtitle import create_adjusted_subtile, group_captions, load_captions
-from typing import List
+from typing import Any, Callable, List
 
 import os
 
 
 class AudioCondenser(object):
     # TODO: Type hinting
-    def __init__(self,
-                 input_files: InputFiles,
-                 output_files: OutputFiles,
-                 config: Configuration,
-                 is_valid_subtitle,
-                 map_subtile):
+    def __init__(
+            self,
+            input_files: InputFiles,
+            output_files: OutputFiles,
+            config: Configuration,
+            is_valid_subtitle: Callable[[str, AnyCaption], bool],
+            map_subtile: Callable[[Any], Any]):
         self.input_files = input_files
         self.output_files = output_files
         self.config = config
@@ -35,23 +36,15 @@ class AudioCondenser(object):
                 os.remove(outfile.path)
 
     def run(self) -> None:
-        return self.create_condense_audio(
-            self.input_files,
-            self.output_files,
-            self.config,
-            self.outfiles,
-            self.is_valid_subtitle,
-            self.map_subtile)
+        # Shorten Variable Name
+        input_files = self.input_files
+        output_files = self.output_files
+        config = self.config
+        outfiles = self.outfiles
+        is_valid_subtitle = self.is_valid_subtitle
+        map_subtile = self.map_subtile
 
-    @staticmethod
-    def create_condense_audio(input_files: InputFiles,
-                              output_files: OutputFiles,
-                              config: Configuration,
-                              outfiles: List[IntermediateOutfile],
-                              is_valid_subtitle,
-                              map_subtile) -> None:
-        captions = load_captions(input_files.subtitle_path,
-                                 is_valid_subtitle, map_subtile)
+        captions = load_captions(input_files.subtitle_path, is_valid_subtitle, map_subtile)
         if config.print_subtitle:
             for i, caption in enumerate(captions):
                 print("%3d %s" % (i, caption.text))
@@ -121,11 +114,11 @@ class Builder(object):
         self.config = config
         return self
 
-    def setIsValidSubtitleFunc(self, is_valid_subtitle):
+    def setIsValidSubtitleFunc(self, is_valid_subtitle: Callable[[str, AnyCaption], bool]):
         self.is_valid_subtitle = is_valid_subtitle
         return self
 
-    def setMapSubtitleFunc(self, map_subtile):
+    def setMapSubtitleFunc(self, map_subtile: Callable[[Any], Any]):
         self.map_subtile = map_subtile
         return self
 
