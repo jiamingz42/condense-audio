@@ -6,7 +6,7 @@ from subprocess import *
 from trim_movie.subtitle import Caption
 from trim_movie.type import *
 from trim_movie import condenser
-from typing import Union
+from typing import Union, List
 
 
 import argparse
@@ -14,6 +14,13 @@ import ass
 import os
 import re
 import webvtt
+
+
+def get_files(patterns: List[str]) -> List[str]:
+    file_matches = []
+    for pattern in patterns:
+        file_matches += glob(pattern)
+    return file_matches
 
 
 def main() -> int:
@@ -48,11 +55,16 @@ def main() -> int:
         # TODO: Extract to a helper method (video_infile -> subtitle_infile)
         match = re.match(".*(S\d+E\d+)", video_infile)
         assert match is not None, "Did not specify `--sin`. Can't infer from `--vin` either."
-        pattern = os.path.join(os.path.dirname(
-            video_infile), "*{pattern}*.vtt".format(pattern=match.group(1)))
-        file_matches = glob(pattern)
+        pattern = match.group(1)
+        file_matches = get_files([
+            os.path.join(os.path.dirname(video_infile),
+                         "*{pattern}*.vtt".format(pattern=pattern)),
+            os.path.join(os.path.dirname(video_infile),
+                         "*{pattern}*.ass".format(pattern=pattern))
+        ])
         assert len(
-            file_matches) == 1, "len(file_matches) is not 1. file_matches = %s" % file_matches
+            file_matches) == 1, "len(file_matches) is not 1. pattern = %s. file_matches = %s" % (pattern, file_matches)
+
         subtitle_infile = file_matches[0]
 
     if args.sub_out:
@@ -110,8 +122,7 @@ def main() -> int:
 # TODO: Provide these function via extension
 def is_valid_subtitle(
         filename: str,
-        caption: Union[webvtt.Caption, ass.line.Dialogue]
-) -> bool:
+        caption: Union[webvtt.Caption, ass.line.Dialogue]) -> bool:
     if filename.endswith(".vtt"):
         if '♪' in caption.text:
             return False
