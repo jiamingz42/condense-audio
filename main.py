@@ -28,6 +28,11 @@ class IntermediateOutfile(NamedTuple):
     duration: Timestamp
 
 
+class OutputFiles(NamedTuple):
+    audio_path: str
+    subtitle_path: str
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description='Process some integers.')
     parser.add_argument('--vin', required=True,
@@ -104,9 +109,8 @@ def main() -> int:
     try:
         create_condense_audio(
             InputFiles(video_infile, subtitle_infile),
+            OutputFiles(final_outfile, subtitle_outfile),
             tmpdir,
-            subtitle_outfile,
-            final_outfile,
             list_file_path,
             outfiles)
     finally:
@@ -139,9 +143,8 @@ def map_subtile(caption: webvtt.Caption) -> webvtt.Caption:
 
 
 def create_condense_audio(input_files: InputFiles,
+                          output_files: OutputFiles,
                           tmpdir: str,
-                          subtitle_outfile: str,
-                          final_outfile: str,
                           list_file_path: str,
                           outfiles: List[IntermediateOutfile]):
     captions = load_captions(input_files.subtitle_path,
@@ -167,7 +170,7 @@ def create_condense_audio(input_files: InputFiles,
             list_txt.write(f"duration {f.duration.total_seconds}\n")
 
     print("Concating audio segments ...")
-    concat_video(list_file_path, final_outfile)
+    concat_video(list_file_path, output_files.audio_path)
 
     group_durations = [
         *map(lambda group: group[-1].end - group[0].start, groups)]
@@ -181,10 +184,10 @@ def create_condense_audio(input_files: InputFiles,
     assert len(group_durations_acc) == len(group_durations)
 
     vtt = create_adjusted_subtile(groups)
-    vtt.save(subtitle_outfile)
+    vtt.save(output_files.subtitle_path)
 
     video_in_duration = get_duration(input_files.video_path)
-    outfile_duration = get_duration(final_outfile)
+    outfile_duration = get_duration(output_files.audio_path)
     print(f"Output duration is %.2f%% of the original" %
           (outfile_duration / video_in_duration * 100))
 
