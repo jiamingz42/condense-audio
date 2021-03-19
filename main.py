@@ -3,7 +3,7 @@
 
 from glob import glob
 from subprocess import *
-from trim_movie.subtitle import Caption
+from trim_movie.subtitle import Caption, AnyCaption
 from trim_movie.type import *
 from trim_movie import condenser
 from trim_movie.logger import log
@@ -50,7 +50,7 @@ def main() -> int:
     parser.add_argument(
         '--video-idx-regex',
         # regex = ".*(S\d+E\d+)"
-        default=".*( \\b\d{2}\\b) \(",
+        default=".*( \\b\d{2}\\b )\(",
         help="A regex pattern to match video input's index")
 
     args = parser.parse_args()
@@ -125,11 +125,8 @@ def main() -> int:
 
     return 0
 
-
 # TODO: Provide these function via extension
-def is_valid_subtitle(
-        filename: str,
-        caption: Union[webvtt.Caption, ass.line.Dialogue]) -> bool:
+def is_valid_subtitle(filename: str, caption: AnyCaption) -> bool:
     if isinstance(caption, webvtt.Caption):
         if '♪' in caption.text:
             return False
@@ -140,10 +137,15 @@ def is_valid_subtitle(
             raise ValueError("Caption end < caption start: %s" % str(caption))
         return True
     elif isinstance(caption, ass.line.Dialogue):
+        if caption.name == 'NTP':
+            return False
         # TODO: Hardcoded - won't work for another *.ass file
-        return caption.style != '*Default' and bool(caption.text) and '諸神字幕組' not in caption.text
+        return caption.style != '*Default' and bool(caption.text) and '諸神字幕組' not in caption.text and '注：' not in caption.text
+    elif isinstance(caption, ass.line.Comment):
+        return False
     else:
-        raise ValueError("Invalid subtitle: %s" % filename)
+        raise ValueError(
+            f"Invalid subtitle type {type(caption)} for file {repr(filename)}")
 
 
 def map_subtile(caption: Caption) -> Caption:

@@ -6,3 +6,7 @@ class Dialogue(object):
     @property
     def text(self) -> str:
         pass
+
+    @property
+    def name(self) -> str:
+        pass
