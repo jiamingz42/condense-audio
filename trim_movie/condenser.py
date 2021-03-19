@@ -51,10 +51,15 @@ class AudioCondenser(object):
                 print("%3d %s" % (i, caption.text))
             return
 
-        groups = group_captions(captions, 1000)
+        groups = group_captions(captions, interval=1000)
         if len(groups) == 0:
             log("[WARNING] No content from subtitle. Will terminate early.")
             return
+
+        # Processing subtitles are significantly faster than processing audio.
+        # Processing subtitles first will help us fail earlier
+        vtt = create_adjusted_subtile(groups)
+        vtt.save(output_files.subtitle_path)
 
         # TODO: Map (input_files, groups) -> (video_path : str, intermediate_outfile : str, start : str, duration : str)
         print("Creating audio segments based on the subtitle ...")
@@ -71,24 +76,20 @@ class AudioCondenser(object):
 
         self.write_to_list_file()
 
-        # TODO: Progress bar?
         print("Concating %d audio segments ..." % len(self.outfiles))
         concat_audio_segments(config.list_file_path, output_files.audio_path, len(self.outfiles))
 
         # TODO: Put it into a helper method
-        group_durations = [
-            *map(lambda group: group.duration, groups)]
-        group_durations_acc = []
-        for i, group_duration in enumerate(group_durations):
-            if i == 0:
-                group_durations_acc.append(group_duration)
-            else:
-                group_durations_acc.append(
-                    group_durations_acc[-1] + group_duration)
-        assert len(group_durations_acc) == len(group_durations)
-
-        vtt = create_adjusted_subtile(groups)
-        vtt.save(output_files.subtitle_path)
+        # group_durations = [
+        #     *map(lambda group: group.duration, groups)]
+        # group_durations_acc = []
+        # for i, group_duration in enumerate(group_durations):
+        #     if i == 0:
+        #         group_durations_acc.append(group_duration)
+        #     else:
+        #         group_durations_acc.append(
+        #             group_durations_acc[-1] + group_duration)
+        # assert len(group_durations_acc) == len(group_durations)
 
         self.print_duration_percent()
 
