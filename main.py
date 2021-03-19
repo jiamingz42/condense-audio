@@ -7,7 +7,7 @@ from trim_movie.subtitle import Caption
 from trim_movie.type import *
 from trim_movie import condenser
 from trim_movie.logger import log
-from trim_movie.args_helper import get_subtitle_outfile
+from trim_movie.args_helper import get_subtitle_outfile, get_audio_outfile
 from typing import List, Union
 
 
@@ -92,15 +92,7 @@ def main() -> int:
         subtitle_infile = file_matches[0]
 
     subtitle_outfile = get_subtitle_outfile(args.sub_out, match, video_infile)
-
-    if args.out:
-        final_outfile = os.path.abspath(args.out)
-    else:
-        match = re.match(regex, video_infile)
-        assert match is not None, "Did not specify `--sout`. Can't infer from `--sin` either."
-        final_outfile_name = '{idx}.mp3'.format(idx=match.group(1))
-        final_outfile = os.path.join(os.path.dirname(
-            video_infile), 'condensed', final_outfile_name)
+    final_outfile = get_audio_outfile(args.out, match, video_infile)
 
     final_outfile_dir = os.path.dirname(final_outfile)
 
