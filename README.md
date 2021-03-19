@@ -9,6 +9,8 @@ efficient, I created this program to only extract those audio segments where
 there are conversations. There are similiar programs that can extract condensed
 audio but it doesn't adjust the subtitle accordingly. This program does both.
 
+![Diagram](./images/diagram.png)
+
 
 # Usage
 
