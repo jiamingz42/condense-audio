@@ -79,18 +79,6 @@ class AudioCondenser(object):
         print("Concating %d audio segments ..." % len(self.outfiles))
         concat_audio_segments(config.list_file_path, output_files.audio_path, len(self.outfiles))
 
-        # TODO: Put it into a helper method
-        # group_durations = [
-        #     *map(lambda group: group.duration, groups)]
-        # group_durations_acc = []
-        # for i, group_duration in enumerate(group_durations):
-        #     if i == 0:
-        #         group_durations_acc.append(group_duration)
-        #     else:
-        #         group_durations_acc.append(
-        #             group_durations_acc[-1] + group_duration)
-        # assert len(group_durations_acc) == len(group_durations)
-
         self.print_duration_percent()
 
     def write_to_list_file(self) -> None:
