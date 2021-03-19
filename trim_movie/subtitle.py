@@ -83,7 +83,7 @@ def read_webvtt(infile: str,
 def read_ass(infile: str,
              is_valid_subtitle: Callable[[str, ass.line.Dialogue], bool]
              ) -> Iterator[Caption]:
-    with open(infile, "r") as f:
+    with open(infile, "r", encoding='utf_8_sig') as f:
         ass_subtitle = ass.parse(f)
     for event in ass_subtitle.events:
         if is_valid_subtitle(infile, event):
