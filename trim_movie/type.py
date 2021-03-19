@@ -27,3 +27,7 @@ class Configuration(NamedTuple):
 
     tmpdir: str
     keep_tmpdir: bool
+
+    # Run `mkvmerge -i path/to/video.mkv` to find the audio format
+    # valid value: aac, flac
+    intermediate_audio_ext: str
