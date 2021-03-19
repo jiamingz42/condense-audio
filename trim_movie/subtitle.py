@@ -122,9 +122,14 @@ def create_adjusted_subtile(groups: List[CaptionGroup]) -> webvtt.WebVTT:
             shift = (group.start - last_timestamp).map(lambda x: x - 1)
 
         for caption in group.captions:
+            adjusted_start = caption.start - shift
+            adjusted_end = caption.end - shift
+            if adjusted_start < Timestamp(0):
+                log(f"[WARNING] Invalid adjusted timestamp for caption\n\t{caption}")
+                continue
             vtt_caption = webvtt.Caption(
-                str(caption.start - shift),
-                str(caption.end - shift),
+                str(adjusted_start),
+                str(adjusted_end),
                 caption.text
             )
             vtt.captions.append(vtt_caption)
