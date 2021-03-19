@@ -53,6 +53,10 @@ def main() -> int:
         args.tmpdir,
         args.keep_tmpdir)
 
+    # TODO: Can pass in the regex pattern
+    # regex = ".*(S\d+E\d+)"
+    regex = ".* (\d{2}) \("
+
     if args.sub_in:
         subtitle_infile = os.path.abspath(args.sub_in)
     else:
@@ -61,7 +65,7 @@ def main() -> int:
         #                                                       ******
         #  we will try to find subtitle in the same directory matching `*S01E01*.vtt`
         # TODO: Extract to a helper method (video_infile -> subtitle_infile)
-        match = re.match(".*(S\d+E\d+)", video_infile)
+        match = re.match(regex, video_infile)
         assert match is not None, "Did not specify `--sin`. Can't infer from `--vin` either."
         pattern = match.group(1)
         file_matches = get_files([
@@ -77,17 +81,17 @@ def main() -> int:
     if args.sub_out:
         subtitle_outfile = os.path.abspath(args.sub_out)
     else:
-        match = re.match(".*(S\d+E\d+)", video_infile)
-        assert match is not None, "Did not specify `--sin`. Can't infer from `--sout` either."
+        match = re.match(regex, video_infile)
+        assert match is not None, "Did not specify `--sin`. Can't infer from `--vin` either."
         subtitle_filename = '{idx}.vtt'.format(idx=match.group(1))
         subtitle_outfile = os.path.join(os.path.dirname(
             video_infile), 'condensed', subtitle_filename)
 
-    if args.sub_out:
+    if args.out:
         final_outfile = os.path.abspath(args.out)
     else:
-        match = re.match(".*(S\d+E\d+)", video_infile)
-        assert match is not None, "Did not specify `--sin`. Can't infer from `--sout` either."
+        match = re.match(regex, video_infile)
+        assert match is not None, "Did not specify `--sout`. Can't infer from `--sin` either."
         final_outfile_name = '{idx}.mp3'.format(idx=match.group(1))
         final_outfile = os.path.join(os.path.dirname(
             video_infile), 'condensed', final_outfile_name)
@@ -138,7 +142,7 @@ def is_valid_subtitle(
         return True
     elif isinstance(caption, ass.line.Dialogue):
         # TODO: Hardcoded - won't work for another *.ass file
-        return caption.style == '*Default-ja'
+        return caption.style == '日文'
     else:
         raise ValueError("Invalid subtitle: %s" % filename)
 
