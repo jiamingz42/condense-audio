@@ -37,10 +37,7 @@ jobs:
                   flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
             - name: Check type comformance with mypy
               run: |
-                  mypy --ignore-missing-imports `ls -R|grep .py$|xargs`
-            - name: Analysing the code with pylint
-              run: |
-                  pylint `ls -R|grep .py$|xargs`
+                  find . -name '*.py' | xargs mypy --ignore-missing-imports
             - name: Test with pytest
               run: |
                   PYTHONPATH=. pytest
