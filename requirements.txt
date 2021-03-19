@@ -2,3 +2,4 @@ pyfunctional
 webvtt-py
 tqdm
 ass
+termcolor
