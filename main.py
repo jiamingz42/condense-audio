@@ -7,7 +7,8 @@ from trim_movie.subtitle import Caption
 from trim_movie.type import *
 from trim_movie import condenser
 from trim_movie.logger import log
-from typing import Union, List
+from trim_movie.args_helper import get_subtitle_outfile
+from typing import Union, List, Match
 
 
 import argparse
@@ -15,6 +16,7 @@ import ass
 import os
 import re
 import webvtt
+import sys
 
 
 def get_files(patterns: List[str]) -> List[str]:
@@ -90,14 +92,7 @@ def main() -> int:
             sys.exit(1)
         subtitle_infile = file_matches[0]
 
-    if args.sub_out:
-        subtitle_outfile = os.path.abspath(args.sub_out)
-    else:
-        match = re.match(regex, video_infile)
-        assert match is not None, "Did not specify `--sin`. Can't infer from `--vin` either."
-        subtitle_filename = '{idx}.vtt'.format(idx=match.group(1))
-        subtitle_outfile = os.path.join(os.path.dirname(
-            video_infile), 'condensed', subtitle_filename)
+    subtitle_outfile = get_subtitle_outfile(args.sub_out, match, video_infile)
 
     if args.out:
         final_outfile = os.path.abspath(args.out)
