@@ -6,6 +6,7 @@ from subprocess import *
 from trim_movie.subtitle import Caption
 from trim_movie.type import *
 from trim_movie import condenser
+from trim_movie.logger import log
 from typing import Union, List
 
 
@@ -14,7 +15,6 @@ import ass
 import os
 import re
 import webvtt
-
 
 def get_files(patterns: List[str]) -> List[str]:
     file_matches = []
@@ -51,7 +51,8 @@ def main() -> int:
         args.print_subtitle,
         os.path.join(args.tmpdir, "list.txt"),
         args.tmpdir,
-        args.keep_tmpdir)
+        args.keep_tmpdir,
+        "flac")  # TODO: Hardcoded
 
     # TODO: Can pass in the regex pattern
     # regex = ".*(S\d+E\d+)"
@@ -74,8 +75,11 @@ def main() -> int:
             os.path.join(os.path.dirname(video_infile),
                          "*{pattern}*.ass".format(pattern=pattern))
         ])
-        assert len(
-            file_matches) == 1, "len(file_matches) is not 1. pattern = %s. file_matches = %s" % (pattern, file_matches)
+        if len(file_matches) != 1:
+            import json
+            log(f"[ERROR] len(file_matches) != 1. pattern = {repr(pattern)}. file_matches is\n {json.dumps(file_matches, indent=4)}")
+            import sys
+            sys.exit(1)
         subtitle_infile = file_matches[0]
 
     if args.sub_out:
@@ -142,7 +146,7 @@ def is_valid_subtitle(
         return True
     elif isinstance(caption, ass.line.Dialogue):
         # TODO: Hardcoded - won't work for another *.ass file
-        return caption.style == '日文'
+        return caption.style != '*Default' and bool(caption.text) and '諸神字幕組' not in caption.text
     else:
         raise ValueError("Invalid subtitle: %s" % filename)
 

@@ -1,9 +1,9 @@
 from tqdm import tqdm
 from trim_movie.ffmpeg import concat_audio_segments, get_duration, cut_out_video
+from trim_movie.logger import log
 from trim_movie.subtitle import create_adjusted_subtile, group_captions, load_captions, AnyCaption
 from trim_movie.type import *
 from typing import Any, Callable, List
-from termcolor import cprint
 
 import os
 
@@ -53,7 +53,7 @@ class AudioCondenser(object):
 
         groups = group_captions(captions, 1000)
         if len(groups) == 0:
-            cprint("[WARNING] No content from subtitle. Will terminate early.", 'red')
+            log("[WARNING] No content from subtitle. Will terminate early.")
             return
 
         # TODO: Map (input_files, groups) -> (video_path : str, intermediate_outfile : str, start : str, duration : str)
