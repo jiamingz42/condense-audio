@@ -3,6 +3,7 @@ from trim_movie.ffmpeg import concat_audio_segments, get_duration, cut_out_video
 from trim_movie.subtitle import create_adjusted_subtile, group_captions, load_captions, AnyCaption
 from trim_movie.type import *
 from typing import Any, Callable, List
+from termcolor import cprint
 
 import os
 
@@ -50,13 +51,16 @@ class AudioCondenser(object):
                 print("%3d %s" % (i, caption.text))
             return
 
-        # TODO: CaptionGroup#start, #end, #duration, #captions
         groups = group_captions(captions, 1000)
+        if len(groups) == 0:
+            cprint("[WARNING] No content from subtitle. Will terminate early.", 'red')
+            return
 
         # TODO: Map (input_files, groups) -> (video_path : str, intermediate_outfile : str, start : str, duration : str)
         print("Creating audio segments based on the subtitle ...")
+        audio_ext = config.intermediate_audio_ext
         for i, group in enumerate(tqdm(groups)):
-            intermediate_outfile = os.path.abspath(f"{config.tmpdir}/out_{i:03d}.aac")
+            intermediate_outfile = os.path.abspath(f"{config.tmpdir}/out_{i:03d}.{audio_ext}")
             cut_out_video(
                 input_files.video_path,
                 intermediate_outfile,
