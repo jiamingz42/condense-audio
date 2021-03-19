@@ -1,4 +1,5 @@
 from trim_movie.timestamp import Timestamp
+from trim_movie.logger import log
 from typing import NamedTuple, List, Callable, Iterator, Any, Union
 
 import ass
@@ -85,13 +86,17 @@ def read_ass(infile: str,
              ) -> Iterator[Caption]:
     with open(infile, "r", encoding='utf_8_sig') as f:
         ass_subtitle = ass.parse(f)
+    total_count = valid_count = 0
     for event in ass_subtitle.events:
+        total_count += 1
         if is_valid_subtitle(infile, event):
+            valid_count += 1
             yield Caption(
                 Timestamp.from_timedelta(event.start),
                 Timestamp.from_timedelta(event.end),
                 event.text
             )
+    print(f"[INFO] {valid_count}/{total_count} subtitle lines are valid")
 
 
 def group_captions(captions: List[Caption], interval: int) -> List[CaptionGroup]:
