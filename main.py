@@ -8,7 +8,7 @@ from trim_movie.type import *
 from trim_movie import condenser
 from trim_movie.logger import log
 from trim_movie.args_helper import get_subtitle_outfile
-from typing import Union, List, Match
+from typing import List, Union
 
 
 import argparse
@@ -16,7 +16,6 @@ import ass
 import os
 import re
 import webvtt
-import sys
 
 
 def get_files(patterns: List[str]) -> List[str]:
