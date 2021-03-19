@@ -137,10 +137,12 @@ def is_valid_subtitle(filename: str, caption: AnyCaption) -> bool:
             raise ValueError("Caption end < caption start: %s" % str(caption))
         return True
     elif isinstance(caption, ass.line.Dialogue):
+        if caption.text is None or caption.text.strip() == "":
+            return False
         if caption.name == 'NTP':
             return False
         # TODO: Hardcoded - won't work for another *.ass file
-        return caption.style != '*Default' and bool(caption.text) and '諸神字幕組' not in caption.text and '注：' not in caption.text
+        return caption.style != '*Default'
     elif isinstance(caption, ass.line.Comment):
         return False
     else:
