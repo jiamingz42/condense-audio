@@ -1,5 +1,7 @@
 from datetime import timedelta
 
+import math
+
 class Timestamp(object):
     def __init__(self, total_milliseconds):
         self.total_milliseconds = total_milliseconds
