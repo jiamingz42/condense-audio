@@ -16,15 +16,18 @@ import os
 import re
 import webvtt
 
+
 def get_files(patterns: List[str]) -> List[str]:
     file_matches = []
     for pattern in patterns:
         file_matches += glob(pattern)
     return file_matches
 
+
 def folder_exists(folder: str) -> str:
     assert os.path.isdir(folder), "Folder %s not found" % folder
     return folder
+
 
 def main() -> int:
     parser = argparse.ArgumentParser(description='Process some integers.')
@@ -43,6 +46,11 @@ def main() -> int:
         default=False,
         action='store_true',
         help='If true, only print filtered / processed subtitle w/o processing the video')
+    parser.add_argument(
+        '--video-idx-regex',
+        # regex = ".*(S\d+E\d+)"
+        default=".*( \\b\d{2}\\b) \(",
+        help="A regex pattern to match video input's index")
 
     args = parser.parse_args()
 
@@ -53,10 +61,9 @@ def main() -> int:
         args.tmpdir,
         args.keep_tmpdir,
         "flac")  # TODO: Hardcoded
+    regex = args.video_idx_regex
 
-    # TODO: Can pass in the regex pattern
-    # regex = ".*(S\d+E\d+)"
-    regex = ".* (\d{2}) \("
+    match = re.match(regex, video_infile)
 
     if args.sub_in:
         subtitle_infile = os.path.abspath(args.sub_in)
@@ -77,7 +84,8 @@ def main() -> int:
         ])
         if len(file_matches) != 1:
             import json
-            log(f"[ERROR] len(file_matches) != 1. pattern = {repr(pattern)}. file_matches is\n {json.dumps(file_matches, indent=4)}")
+            log(
+                f"[ERROR] len(file_matches) != 1. pattern = {repr(pattern)}. file_matches is\n {json.dumps(file_matches, indent=4)}")
             import sys
             sys.exit(1)
         subtitle_infile = file_matches[0]
@@ -140,7 +148,8 @@ def is_valid_subtitle(
         if '♪' in caption.text:
             return False
         if (len(caption.end) != len(caption.start)):
-            raise ValueError("Caption start & end doesn't have the same len: %s" % str(caption))
+            raise ValueError(
+                "Caption start & end doesn't have the same len: %s" % str(caption))
         if (caption.end < caption.start):
             raise ValueError("Caption end < caption start: %s" % str(caption))
         return True
