@@ -46,6 +46,14 @@ class Timestamp(object):
         assert isinstance(other, type(self))
         return self.total_milliseconds == other.total_milliseconds
 
+    def __lt__(self, other):
+        assert isinstance(other, type(self))
+        return self.total_milliseconds < other.total_milliseconds
+
+    def __gt__(self, other):
+        assert isinstance(other, type(self))
+        return self.total_milliseconds > other.total_milliseconds
+
     def __str__(self):
         milliseconds = self.total_milliseconds % 1000
 
