@@ -2,7 +2,7 @@
 Python wrapper for cli `ffmpeg` command
 """
 
-from subprocess import *
+from subprocess import PIPE, Popen, STDOUT
 from typing import Iterable, Tuple, Union
 from tqdm import tqdm
 

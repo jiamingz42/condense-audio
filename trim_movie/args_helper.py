@@ -1,7 +1,6 @@
 from typing import Union, Match
 
 import os
-import sys
 
 
 def get_subtitle_outfile(origin_sub_out: str, match: Union[Match, None], video_infile: str) -> str:

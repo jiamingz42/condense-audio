@@ -8,7 +8,7 @@ from trim_movie.type import *
 from trim_movie import condenser
 from trim_movie.logger import log
 from trim_movie.args_helper import get_subtitle_outfile, get_audio_outfile
-from typing import List, Union
+from typing import List
 
 
 import argparse

@@ -2,7 +2,7 @@ from tqdm import tqdm
 from trim_movie.ffmpeg import concat_audio_segments, get_duration, cut_out_video
 from trim_movie.logger import log
 from trim_movie.subtitle import create_adjusted_subtile, group_captions, load_captions, AnyCaption
-from trim_movie.type import *
+from trim_movie.type import Configuration, InputFiles, IntermediateOutfile, OutputFiles
 from typing import Any, Callable, List
 
 import os
